@@ -2,7 +2,7 @@
 
 > AI-powered text message analyzer. Paste your convo, get a rizz score + 3 better responses. No cap.
 
-**[Live Demo →](https://your-app.vercel.app)**
+**[Live Demo → Try it here 🔥](https://chatai-rizz-ot7ozbyzo-vivaan-dhawans-projects.vercel.app/)**
 
 Built for Gen Z. Free forever. No account needed.
 
