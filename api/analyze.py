@@ -18,9 +18,9 @@ TEXT_MODELS = [
 
 # Vision-capable free models for OCR
 VISION_MODELS = [
-    "google/gemma-3-27b-it:free",
     "meta-llama/llama-3.2-11b-vision-instruct:free",
     "qwen/qwen2.5-vl-7b-instruct:free",
+    "google/gemma-3-27b-it:free",
 ]
 
 SCENARIOS = {
@@ -81,7 +81,10 @@ def extract_text_from_image(image_b64, mime_type="image/jpeg"):
         }
     ]
     response = call_with_fallback(messages, VISION_MODELS, max_tokens=500)
-    return response.json()['choices'][0]['message']['content'].strip()
+    content = response.json()['choices'][0]['message'].get('content')
+    if not content:
+        raise Exception("Vision model couldn't read the screenshot. Try a clearer image.")
+    return content.strip()
 
 
 def analyze_conversation(conversation, scenario):
@@ -127,7 +130,10 @@ Respond ONLY with valid JSON, no extra text:
     ]
 
     response = call_with_fallback(messages, TEXT_MODELS)
-    content = response.json()['choices'][0]['message']['content'].strip()
+    content = response.json()['choices'][0]['message'].get('content')
+    if not content:
+        raise Exception("AI returned empty response. Try again.")
+    content = content.strip()
 
     if '```json' in content:
         content = content.split('```json')[1].split('```')[0].strip()
