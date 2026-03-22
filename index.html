@@ -21,9 +21,7 @@
     --yellow: #ffe55c;
     --red: #ff4757;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -31,8 +29,6 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  /* Animated background */
   body::before {
     content: '';
     position: fixed;
@@ -43,21 +39,9 @@
     pointer-events: none;
     z-index: 0;
   }
+  .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; position: relative; z-index: 1; }
 
-  .container {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Header */
-  header {
-    text-align: center;
-    padding: 3rem 0 2.5rem;
-  }
-
+  header { text-align: center; padding: 3rem 0 2.5rem; }
   .logo {
     font-family: 'Bebas Neue', sans-serif;
     font-size: clamp(3.5rem, 12vw, 6rem);
@@ -70,379 +54,189 @@
     filter: drop-shadow(0 0 40px rgba(255,60,172,0.3));
     animation: pulse-glow 3s ease-in-out infinite;
   }
-
   @keyframes pulse-glow {
     0%, 100% { filter: drop-shadow(0 0 40px rgba(255,60,172,0.3)); }
     50% { filter: drop-shadow(0 0 60px rgba(255,60,172,0.5)); }
   }
+  .tagline { margin-top: 0.75rem; color: var(--muted); font-size: 0.95rem; font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase; }
 
-  .tagline {
-    margin-top: 0.75rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  /* Scenario pills */
-  .scenario-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-  }
-
-  .scenarios {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
+  .scenario-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem; }
+  .scenarios { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
   .scenario-pill {
-    padding: 0.45rem 1rem;
-    border-radius: 100px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 0.82rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: 'DM Sans', sans-serif;
+    padding: 0.45rem 1rem; border-radius: 100px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s ease; font-family: 'DM Sans', sans-serif;
   }
-
-  .scenario-pill:hover {
-    border-color: var(--accent);
-    color: var(--text);
-  }
-
+  .scenario-pill:hover { border-color: var(--accent); color: var(--text); }
   .scenario-pill.active {
     background: linear-gradient(135deg, rgba(255,60,172,0.2), rgba(43,134,197,0.2));
-    border-color: var(--accent);
-    color: var(--text);
+    border-color: var(--accent); color: var(--text);
   }
 
-  /* Input card */
+  /* Input tabs */
+  .input-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .input-tab {
+    padding: 0.45rem 1.1rem; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+  }
+  .input-tab.active { background: var(--surface2); border-color: #444; color: var(--text); }
+
   .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    transition: border-color 0.2s;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.5rem; margin-bottom: 1rem; transition: border-color 0.2s;
   }
-
-  .card:focus-within {
-    border-color: #333;
-  }
+  .card:focus-within { border-color: #333; }
 
   textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    resize: none;
-    min-height: 140px;
+    width: 100%; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    line-height: 1.6; resize: none; min-height: 140px;
+  }
+  textarea::placeholder { color: var(--muted); font-style: italic; }
+  .char-count { text-align: right; font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+
+  /* Upload zone */
+  #upload-panel { display: none; }
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 2.5rem 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+    background: var(--surface);
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent); background: rgba(255,60,172,0.04);
+  }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .upload-title { font-size: 1rem; font-weight: 500; margin-bottom: 0.4rem; }
+  .upload-sub { font-size: 0.8rem; color: var(--muted); }
+
+  .preview-wrap { position: relative; margin-top: 1rem; display: none; }
+  .preview-wrap img { width: 100%; border-radius: 10px; max-height: 250px; object-fit: cover; }
+  .preview-remove {
+    position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(0,0,0,0.7);
+    border: none; color: white; border-radius: 50%; width: 28px; height: 28px;
+    cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
   }
 
-  textarea::placeholder {
-    color: var(--muted);
-    font-style: italic;
+  /* Loading overlay */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.92);
+    z-index: 100; align-items: center; justify-content: center; flex-direction: column;
+    gap: 1.5rem;
   }
-
-  .char-count {
-    text-align: right;
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-top: 0.5rem;
+  .loading-overlay.show { display: flex; }
+  .loading-ring {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--accent);
+    border-right-color: var(--accent2);
+    animation: spin 1s linear infinite;
   }
-
-  /* CTA Button */
-  .btn {
-    width: 100%;
-    padding: 1rem;
-    border-radius: 12px;
-    border: none;
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.4rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: linear-gradient(135deg, #ff3cac, #784ba0, #2b86c5);
-    background-size: 200% 200%;
-    color: white;
-    animation: gradient-shift 4s ease infinite;
-    position: relative;
-    overflow: hidden;
+    font-size: 1.6rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    background: linear-gradient(135deg, #ff3cac, #2b86c5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fade-msg 0.4s ease;
+    padding: 0 1rem;
   }
+  @keyframes fade-msg { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .loading-sub { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.05em; }
 
+  .btn {
+    width: 100%; padding: 1rem; border-radius: 12px; border: none;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.1em;
+    cursor: pointer; transition: all 0.2s ease;
+    background: linear-gradient(135deg, #ff3cac, #784ba0, #2b86c5);
+    background-size: 200% 200%; color: white;
+    animation: gradient-shift 4s ease infinite;
+  }
   @keyframes gradient-shift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,60,172,0.3); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; animation: none; }
 
-  .btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(255,60,172,0.3);
+  .error-card {
+    background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.2);
+    border-radius: 12px; padding: 1rem 1.25rem; color: var(--red);
+    font-size: 0.9rem; margin-bottom: 1rem; display: none;
   }
 
-  .btn:active:not(:disabled) {
-    transform: translateY(0);
-  }
+  #results { display: none; animation: slide-up 0.4s ease; }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 
-  .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    animation: none;
-  }
-
-  .btn-inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  /* Loading state */
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .loading .spinner { display: block; }
-  .loading .btn-text { display: none; }
-
-  /* Results */
-  #results {
-    display: none;
-    animation: slide-up 0.4s ease;
-  }
-
-  @keyframes slide-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Rizz score */
   .score-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; text-align: center;
   }
-
-  .score-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-  }
-
+  .score-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem; }
   .score-number {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem;
-    line-height: 1;
+    font-family: 'Bebas Neue', sans-serif; font-size: 5rem; line-height: 1;
     background: linear-gradient(135deg, #ff3cac, #784ba0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
+  .score-bar-wrap { background: var(--border); border-radius: 100px; height: 6px; margin: 1rem auto; max-width: 300px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #ff3cac, #784ba0, #2b86c5); transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); width: 0%; }
+  .roast-text { color: var(--muted); font-size: 0.9rem; font-style: italic; margin-top: 0.75rem; padding: 0.75rem 1rem; background: var(--surface2); border-radius: 8px; border-left: 3px solid var(--accent); }
 
-  .score-bar-wrap {
-    background: var(--border);
-    border-radius: 100px;
-    height: 6px;
-    margin: 1rem auto;
-    max-width: 300px;
-    overflow: hidden;
+  .extracted-box {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: var(--muted);
+    line-height: 1.5; white-space: pre-wrap; display: none;
   }
+  .extracted-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
 
-  .score-bar-fill {
-    height: 100%;
-    border-radius: 100px;
-    background: linear-gradient(90deg, #ff3cac, #784ba0, #2b86c5);
-    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-    width: 0%;
-  }
-
-  .roast-text {
-    color: var(--muted);
-    font-size: 0.9rem;
-    font-style: italic;
-    margin-top: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--surface2);
-    border-radius: 8px;
-    border-left: 3px solid var(--accent);
-  }
-
-  /* Alternative cards */
-  .alts-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    margin: 1.5rem 0 0.75rem;
-  }
-
+  .alts-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 1.5rem 0 0.75rem; }
   .alt-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.25rem;
-    margin-bottom: 0.75rem;
-    transition: border-color 0.2s, transform 0.2s;
-    cursor: pointer;
-    position: relative;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; margin-bottom: 0.75rem; transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer; position: relative;
   }
-
-  .alt-card:hover {
-    border-color: #333;
-    transform: translateX(4px);
-  }
-
+  .alt-card:hover { border-color: #333; transform: translateX(4px); }
   .alt-card.rank-1 { border-color: rgba(255,60,172,0.3); }
-
-  .alt-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
+  .alt-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
   .rank-badge {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.1rem;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; width: 28px; height: 28px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-
   .rank-1 .rank-badge { background: linear-gradient(135deg, #ff3cac, #784ba0); }
-  .rank-2 .rank-badge { background: var(--surface2); border: 1px solid var(--border); }
-  .rank-3 .rank-badge { background: var(--surface2); border: 1px solid var(--border); }
-
-  .vibe-tag {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 0.2rem 0.6rem;
-    border-radius: 100px;
-    font-weight: 600;
-  }
-
+  .rank-2 .rank-badge, .rank-3 .rank-badge { background: var(--surface2); border: 1px solid var(--border); }
+  .vibe-tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 100px; font-weight: 600; }
   .vibe-Smooth { background: rgba(0,255,135,0.15); color: var(--green); border: 1px solid rgba(0,255,135,0.2); }
   .vibe-Bold { background: rgba(255,60,172,0.15); color: var(--accent); border: 1px solid rgba(255,60,172,0.2); }
   .vibe-Playful { background: rgba(255,229,92,0.15); color: var(--yellow); border: 1px solid rgba(255,229,92,0.2); }
   .vibe-Safe { background: rgba(43,134,197,0.15); color: var(--accent3); border: 1px solid rgba(43,134,197,0.2); }
   .vibe-Risky { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
-
-  .confidence-bar {
-    height: 2px;
-    background: var(--border);
-    border-radius: 100px;
-    margin-left: auto;
-    flex: 1;
-    max-width: 80px;
-    overflow: hidden;
-  }
-
-  .confidence-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent3));
-    border-radius: 100px;
-    transition: width 0.8s ease;
-    width: 0%;
-  }
-
-  .alt-response {
-    font-size: 0.95rem;
-    line-height: 1.5;
-    margin-bottom: 0.6rem;
-    color: var(--text);
-  }
-
-  .alt-reasoning {
-    font-size: 0.8rem;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-
-  .copy-toast {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    font-size: 0.7rem;
-    background: var(--green);
-    color: #000;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
+  .confidence-bar { height: 2px; background: var(--border); border-radius: 100px; margin-left: auto; flex: 1; max-width: 80px; overflow: hidden; }
+  .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 100px; transition: width 0.8s ease; width: 0%; }
+  .alt-response { font-size: 0.95rem; line-height: 1.5; margin-bottom: 0.6rem; }
+  .alt-reasoning { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+  .copy-toast { position: absolute; top: 0.75rem; right: 0.75rem; font-size: 0.7rem; background: var(--green); color: #000; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; opacity: 0; transition: opacity 0.2s; }
   .copy-toast.show { opacity: 1; }
 
-  /* Error */
-  .error-card {
-    background: rgba(255,71,87,0.1);
-    border: 1px solid rgba(255,71,87,0.2);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    color: var(--red);
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    display: none;
-  }
-
-  /* Footer */
-  footer {
-    text-align: center;
-    padding: 2rem 0 1rem;
-    color: var(--muted);
-    font-size: 0.75rem;
-  }
-
+  .score-emoji { font-size: 2rem; margin-bottom: 0.25rem; }
+  footer { text-align: center; padding: 2rem 0 1rem; color: var(--muted); font-size: 0.75rem; }
   footer a { color: inherit; }
-
-  /* Score emoji */
-  .score-emoji {
-    font-size: 2rem;
-    margin-bottom: 0.25rem;
-  }
-
-  @media (max-width: 480px) {
-    .scenarios { gap: 0.4rem; }
-    .scenario-pill { font-size: 0.78rem; padding: 0.4rem 0.8rem; }
-  }
 </style>
 </head>
 <body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-ring"></div>
+  <div class="loading-msg" id="loading-msg">reading ur chat fr fr...</div>
+  <div class="loading-sub" id="loading-sub">hang tight bestie</div>
+</div>
+
 <div class="container">
   <header>
     <div class="logo">RIZZ<br>COACH</div>
@@ -450,7 +244,7 @@
   </header>
 
   <div class="scenario-label">Pick your scenario</div>
-  <div class="scenarios" id="scenarios">
+  <div class="scenarios">
     <button class="scenario-pill active" data-scenario="first_text">First Text 👋</button>
     <button class="scenario-pill" data-scenario="asking_out">Asking Out 🥺</button>
     <button class="scenario-pill" data-scenario="left_on_read">Left on Read 💀</button>
@@ -458,42 +252,113 @@
     <button class="scenario-pill" data-scenario="ghosted">Was Ghosted 👻</button>
   </div>
 
-  <div class="card">
-    <textarea id="convo-input" placeholder="Paste your convo here...&#10;&#10;e.g.&#10;Me: hey wanna hang this weekend?&#10;Them: maybe idk" maxlength="1500" oninput="updateCount()"></textarea>
-    <div class="char-count"><span id="char-count">0</span> / 1500</div>
+  <div class="input-tabs">
+    <button class="input-tab active" id="tab-text" onclick="switchTab('text')">✍️ Paste Text</button>
+    <button class="input-tab" id="tab-image" onclick="switchTab('image')">📸 Screenshot</button>
+  </div>
+
+  <!-- Text input -->
+  <div id="text-panel">
+    <div class="card">
+      <textarea id="convo-input" placeholder="Paste your convo here...&#10;&#10;e.g.&#10;Me: hey wanna hang this weekend?&#10;Them: maybe idk" maxlength="1500" oninput="updateCount()"></textarea>
+      <div class="char-count"><span id="char-count">0</span> / 1500</div>
+    </div>
+  </div>
+
+  <!-- Image upload -->
+  <div id="upload-panel">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="image-input" accept="image/*" onchange="handleImageSelect(event)">
+        <div class="upload-icon">📱</div>
+        <div class="upload-title">Drop your screenshot here</div>
+        <div class="upload-sub">or click to browse · PNG, JPG, WEBP</div>
+      </div>
+      <div class="preview-wrap" id="preview-wrap">
+        <img id="preview-img" src="" alt="preview">
+        <button class="preview-remove" onclick="removeImage()">✕</button>
+      </div>
+    </div>
   </div>
 
   <div class="error-card" id="error-card"></div>
 
-  <button class="btn" id="analyze-btn" onclick="analyze()">
-    <div class="btn-inner">
-      <div class="spinner"></div>
-      <span class="btn-text">✨ CHECK MY RIZZ ✨</span>
-    </div>
-  </button>
+  <button class="btn" id="analyze-btn" onclick="analyze()">✨ CHECK MY RIZZ ✨</button>
 
   <div id="results">
     <div class="score-card">
       <div class="score-label">Your Rizz Score</div>
       <div class="score-emoji" id="score-emoji">🔥</div>
       <div class="score-number" id="score-number">0</div>
-      <div class="score-bar-wrap">
-        <div class="score-bar-fill" id="score-bar"></div>
-      </div>
+      <div class="score-bar-wrap"><div class="score-bar-fill" id="score-bar"></div></div>
       <div class="roast-text" id="roast-text"></div>
+    </div>
+
+    <div id="extracted-section" style="display:none">
+      <div class="extracted-label">📝 Extracted from screenshot</div>
+      <div class="extracted-box" id="extracted-box"></div>
     </div>
 
     <div class="alts-label">3 Better Responses</div>
     <div id="alts-container"></div>
   </div>
 
-  <footer>Made for the culture 💅 · <a href="https://github.com" target="_blank">GitHub</a></footer>
+  <footer>Made for the culture 💅 · <a href="https://github.com/VIVAAN-DHAWAN/chatai-rizz" target="_blank">GitHub</a></footer>
 </div>
 
 <script>
 let selectedScenario = 'first_text';
+let activeTab = 'text';
+let imageData = null;
+let imageMime = 'image/png';
 
-// Scenario pills
+const LOADING_MESSAGES = [
+  ["reading ur chat fr fr...", "the AI is judging rn 👀"],
+  ["no cap this is mid...", "hang on lemme cook 🧑‍🍳"],
+  ["analyzing the vibes...", "bestie this might hurt 💀"],
+  ["the rizz council is voting...", "majority said L so far 😭"],
+  ["scanning for the ick...", "almost done bestie"],
+  ["doing rizz math...", "carry the W, divide the L"],
+  ["checking your main character energy...", "results loading..."],
+  ["the AI said 'bro really sent that'...", "we're getting help"],
+];
+
+let loadingInterval;
+
+function startLoading(isImage) {
+  const overlay = document.getElementById('loading-overlay');
+  const msgEl = document.getElementById('loading-msg');
+  const subEl = document.getElementById('loading-sub');
+  overlay.classList.add('show');
+
+  let i = 0;
+  const msgs = isImage
+    ? [
+        ["scanning ur screenshot...", "vision AI is reading 👁️"],
+        ["extracting the messages...", "gimme a sec bestie"],
+        ["ok it read it...", "now judging ur rizz 💀"],
+        ...LOADING_MESSAGES
+      ]
+    : LOADING_MESSAGES;
+
+  msgEl.textContent = msgs[0][0];
+  subEl.textContent = msgs[0][1];
+
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % msgs.length;
+    msgEl.style.animation = 'none';
+    msgEl.offsetHeight; // reflow
+    msgEl.style.animation = 'fade-msg 0.4s ease';
+    msgEl.textContent = msgs[i][0];
+    subEl.textContent = msgs[i][1];
+  }, 2000);
+}
+
+function stopLoading() {
+  clearInterval(loadingInterval);
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
 document.querySelectorAll('.scenario-pill').forEach(pill => {
   pill.addEventListener('click', () => {
     document.querySelectorAll('.scenario-pill').forEach(p => p.classList.remove('active'));
@@ -502,10 +367,53 @@ document.querySelectorAll('.scenario-pill').forEach(pill => {
   });
 });
 
-function updateCount() {
-  const len = document.getElementById('convo-input').value.length;
-  document.getElementById('char-count').textContent = len;
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-text').classList.toggle('active', tab === 'text');
+  document.getElementById('tab-image').classList.toggle('active', tab === 'image');
+  document.getElementById('text-panel').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('upload-panel').style.display = tab === 'image' ? 'block' : 'none';
 }
+
+function updateCount() {
+  document.getElementById('char-count').textContent = document.getElementById('convo-input').value.length;
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  imageMime = file.type || 'image/png';
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const result = ev.target.result;
+    imageData = result.split(',')[1]; // base64 only
+    document.getElementById('preview-img').src = result;
+    document.getElementById('preview-wrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  imageData = null;
+  document.getElementById('image-input').value = '';
+  document.getElementById('preview-wrap').style.display = 'none';
+}
+
+// Drag and drop
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('image-input').files = dt.files;
+    handleImageSelect({ target: { files: [file] } });
+  }
+});
 
 function scoreEmoji(score) {
   if (score >= 9) return '🔥';
@@ -524,51 +432,69 @@ function animateScore(target) {
     current = Math.min(current + step, target);
     el.textContent = current.toFixed(1);
     bar.style.width = `${(current / 10) * 100}%`;
-    if (current >= target) {
-      el.textContent = target;
-      clearInterval(timer);
-    }
+    if (current >= target) { el.textContent = target; clearInterval(timer); }
   }, 40);
 }
 
 async function analyze() {
-  const convo = document.getElementById('convo-input').value.trim();
   const btn = document.getElementById('analyze-btn');
   const errorCard = document.getElementById('error-card');
   const results = document.getElementById('results');
+  const isImage = activeTab === 'image';
 
   errorCard.style.display = 'none';
   results.style.display = 'none';
 
-  if (!convo) {
-    errorCard.textContent = 'Bro paste your convo first 💀';
-    errorCard.style.display = 'block';
-    return;
+  let body = { scenario: selectedScenario };
+
+  if (isImage) {
+    if (!imageData) {
+      errorCard.textContent = 'Drop a screenshot first bestie 💀';
+      errorCard.style.display = 'block';
+      return;
+    }
+    body.image_b64 = imageData;
+    body.mime_type = imageMime;
+  } else {
+    const convo = document.getElementById('convo-input').value.trim();
+    if (!convo) {
+      errorCard.textContent = 'Bro paste your convo first 💀';
+      errorCard.style.display = 'block';
+      return;
+    }
+    body.conversation = convo;
   }
 
   btn.disabled = true;
-  btn.classList.add('loading');
+  startLoading(isImage);
 
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversation: convo, scenario: selectedScenario })
+      body: JSON.stringify(body)
     });
 
     const data = await res.json();
+    stopLoading();
 
-    if (data.error) {
-      throw new Error(data.error);
-    }
+    if (data.error) throw new Error(data.error);
 
-    // Score
     document.getElementById('score-emoji').textContent = scoreEmoji(data.rizz_score);
     document.getElementById('roast-text').textContent = `"${data.roast}"`;
+
+    // Show extracted text if from image
+    if (isImage && data.extracted_text) {
+      document.getElementById('extracted-box').textContent = data.extracted_text;
+      document.getElementById('extracted-box').style.display = 'block';
+      document.getElementById('extracted-section').style.display = 'block';
+    } else {
+      document.getElementById('extracted-section').style.display = 'none';
+    }
+
     results.style.display = 'block';
     animateScore(data.rizz_score);
 
-    // Alternatives
     const altsContainer = document.getElementById('alts-container');
     altsContainer.innerHTML = '';
 
@@ -580,41 +506,34 @@ async function analyze() {
         <div class="alt-header">
           <div class="rank-badge">${i + 1}</div>
           <span class="vibe-tag vibe-${alt.vibe}">${alt.vibe}</span>
-          <div class="confidence-bar">
-            <div class="confidence-fill" id="conf-${i}" style="width:0%"></div>
-          </div>
+          <div class="confidence-bar"><div class="confidence-fill" id="conf-${i}" style="width:0%"></div></div>
           <span style="font-size:0.75rem;color:var(--muted)">${Math.round(alt.confidence * 100)}%</span>
         </div>
         <div class="alt-response">${alt.response}</div>
         <div class="alt-reasoning">${alt.reasoning}</div>
       `;
-      card.addEventListener('click', () => copyResponse(alt.response, i));
+      card.addEventListener('click', () => {
+        navigator.clipboard.writeText(alt.response).then(() => {
+          const toast = document.getElementById(`toast-${i}`);
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 1500);
+        });
+      });
       altsContainer.appendChild(card);
-
-      // Animate confidence bar
       setTimeout(() => {
         document.getElementById(`conf-${i}`).style.width = `${alt.confidence * 100}%`;
       }, 100 + i * 150);
     });
 
   } catch (err) {
+    stopLoading();
     errorCard.textContent = `Error: ${err.message}`;
     errorCard.style.display = 'block';
   } finally {
     btn.disabled = false;
-    btn.classList.remove('loading');
   }
 }
 
-function copyResponse(text, idx) {
-  navigator.clipboard.writeText(text).then(() => {
-    const toast = document.getElementById(`toast-${idx}`);
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1500);
-  });
-}
-
-// Enter key submits
 document.getElementById('convo-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) analyze();
 });
