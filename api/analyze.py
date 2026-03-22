@@ -7,18 +7,21 @@ import requests
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# openrouter/free = auto-selects best available free model, zero cost always
-# Falls back through specific free models if auto-router also 429s
-PRIMARY_MODEL = "openrouter/auto"
-FALLBACK_MODELS = [
+# ONLY :free models — these are always $0.00
+TEXT_MODELS = [
     "stepfun/step-3.5-flash:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "mistralai/mistral-7b-instruct:free",
+    "google/gemma-3-27b-it:free",
 ]
 
-# Vision-capable free model for OCR
-VISION_MODEL = "openrouter/auto"
+# Vision-capable free models for OCR
+VISION_MODELS = [
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.2-11b-vision-instruct:free",
+    "qwen/qwen2.5-vl-7b-instruct:free",
+]
 
 SCENARIOS = {
     'first_text': "First text to someone you're interested in",
@@ -29,43 +32,39 @@ SCENARIOS = {
 }
 
 
-def make_request(messages, model, max_tokens=600):
+def call_with_fallback(messages, model_list, max_tokens=600):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://chatai-rizz.vercel.app",
         "X-Title": "Rizz Coach"
     }
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": max_tokens,
-    }
-    return requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-
-
-def call_with_fallback(messages, max_tokens=600):
-    """Try primary model, then fallbacks on 429."""
-    models = [PRIMARY_MODEL] + FALLBACK_MODELS
-    for i, model in enumerate(models):
+    last_error = None
+    for i, model in enumerate(model_list):
         if i > 0:
             time.sleep(1)
         try:
-            response = make_request(messages, model, max_tokens)
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": max_tokens,
+            }
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
             if response.status_code == 429:
+                last_error = "429"
                 continue
             response.raise_for_status()
             return response
-        except requests.exceptions.RequestException:
-            if i == len(models) - 1:
+        except requests.exceptions.RequestException as e:
+            last_error = str(e)
+            if i == len(model_list) - 1:
                 raise
             continue
-    raise Exception("All models rate limited. Try again in a minute.")
+    raise Exception(f"All free models rate limited. Try again in a minute. Last error: {last_error}")
 
 
-def extract_text_from_image(image_b64, mime_type="image/png"):
-    """Use vision AI to extract conversation text from screenshot."""
+def extract_text_from_image(image_b64, mime_type="image/jpeg"):
     messages = [
         {
             "role": "user",
@@ -81,7 +80,7 @@ def extract_text_from_image(image_b64, mime_type="image/png"):
             ]
         }
     ]
-    response = call_with_fallback(messages, max_tokens=500)
+    response = call_with_fallback(messages, VISION_MODELS, max_tokens=500)
     return response.json()['choices'][0]['message']['content'].strip()
 
 
@@ -127,10 +126,9 @@ Respond ONLY with valid JSON, no extra text:
         {"role": "user", "content": prompt}
     ]
 
-    response = call_with_fallback(messages)
+    response = call_with_fallback(messages, TEXT_MODELS)
     content = response.json()['choices'][0]['message']['content'].strip()
 
-    # Strip markdown fences if present
     if '```json' in content:
         content = content.split('```json')[1].split('```')[0].strip()
     elif '```' in content:
@@ -151,7 +149,7 @@ class handler(BaseHTTPRequestHandler):
             scenario = data.get('scenario', 'first_text')
             conversation = data.get('conversation', '').strip()
             image_b64 = data.get('image_b64', '').strip()
-            mime_type = data.get('mime_type', 'image/png')
+            mime_type = data.get('mime_type', 'image/jpeg')
 
             if not OPENROUTER_API_KEY:
                 self._respond(500, {"error": "Server not configured"})
