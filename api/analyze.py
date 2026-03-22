@@ -98,6 +98,10 @@ def call_with_fallback(messages, model_list, max_tokens=600):
 
                 content = extract_content(response.json())
                 if content:
+                    # Skip if model ignored JSON instruction and returned plain text
+                    if content[0] not in ('{', '[', '`') and 'rizz_score' not in content:
+                        last_error = f"Model {model} returned non-JSON text"
+                        break
                     return content
 
                 last_error = f"Empty response from {model}"
@@ -139,38 +143,17 @@ def extract_text_from_image(image_b64, mime_type="image/jpeg"):
 def analyze_conversation(conversation, scenario):
     scenario_desc = SCENARIOS.get(scenario, 'General conversation')
 
-    full_prompt = f"""You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz. Be real, not nice.
+    full_prompt = f"""OUTPUT JSON ONLY. NO EXPLANATIONS. NO PREAMBLE. START WITH {{ AND END WITH }}.
 
-Analyze this text message convo and give 3 alternative responses ranked by confidence, plus a rizz score out of 10.
-
+Task: Analyze this text convo as The Rizz Coach (brutally honest Gen Z texting expert).
 Scenario: {scenario_desc}
+Convo: {conversation}
 
-Convo:
-{conversation}
+Return this exact JSON structure:
+{{"rizz_score": <0-10>, "roast": "<brutal one-liner>", "alternatives": [{{"response": "<text>", "confidence": <0.0-1.0>, "vibe": "<Smooth|Bold|Playful|Safe|Risky>", "reasoning": "<gen z slang reasoning>"}}]}}
 
-Rizz Score (0-10):
-10 = Flawless, instant W
-8-9 = Fire, confident vibes
-6-7 = Mid, safe but not the move
-4-5 = Kinda cringe, doing too much
-2-3 = Big L, sus behavior
-0-1 = Disaster, rip the convo
-
-Be brutally honest. Most convos are mid, don't inflate scores.
-
-Respond ONLY with valid JSON, no extra text:
-{{
-    "rizz_score": <0-10>,
-    "roast": "<one brutal honest line about the current conversation>",
-    "alternatives": [
-        {{
-            "response": "<text message response>",
-            "confidence": <0.0-1.0>,
-            "vibe": "<one word: Smooth/Bold/Playful/Safe/Risky>",
-            "reasoning": "<why this works in gen z slang>"
-        }}
-    ]
-}}"""
+Rizz score: 10=flawless W, 7-9=fire, 5-6=mid, 3-4=cringe, 0-2=disaster. Be brutally honest.
+IMPORTANT: Output raw JSON only. No markdown. No explanation. First character must be {{"""
 
     messages = [{"role": "user", "content": full_prompt}]
     content = call_with_fallback(messages, TEXT_MODELS)
