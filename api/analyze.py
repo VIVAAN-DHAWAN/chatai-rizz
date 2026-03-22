@@ -7,6 +7,19 @@ import requests
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# openrouter/free = auto-selects best available free model, zero cost always
+# Falls back through specific free models if auto-router also 429s
+PRIMARY_MODEL = "openrouter/auto"
+FALLBACK_MODELS = [
+    "stepfun/step-3.5-flash:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "mistralai/mistral-7b-instruct:free",
+]
+
+# Vision-capable free model for OCR
+VISION_MODEL = "openrouter/auto"
+
 SCENARIOS = {
     'first_text': "First text to someone you're interested in",
     'asking_out': 'Asking someone out on a date',
@@ -14,6 +27,63 @@ SCENARIOS = {
     'situationship': 'Navigating a situationship',
     'ghosted': 'Coming back after being ghosted',
 }
+
+
+def make_request(messages, model, max_tokens=600):
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://chatai-rizz.vercel.app",
+        "X-Title": "Rizz Coach"
+    }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": max_tokens,
+    }
+    return requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+
+
+def call_with_fallback(messages, max_tokens=600):
+    """Try primary model, then fallbacks on 429."""
+    models = [PRIMARY_MODEL] + FALLBACK_MODELS
+    for i, model in enumerate(models):
+        if i > 0:
+            time.sleep(1)
+        try:
+            response = make_request(messages, model, max_tokens)
+            if response.status_code == 429:
+                continue
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException:
+            if i == len(models) - 1:
+                raise
+            continue
+    raise Exception("All models rate limited. Try again in a minute.")
+
+
+def extract_text_from_image(image_b64, mime_type="image/png"):
+    """Use vision AI to extract conversation text from screenshot."""
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime_type};base64,{image_b64}"}
+                },
+                {
+                    "type": "text",
+                    "text": "Extract all the text messages from this screenshot exactly as they appear. Format as a conversation with each message on a new line. Output only the raw conversation text, nothing else."
+                }
+            ]
+        }
+    ]
+    response = call_with_fallback(messages, max_tokens=500)
+    return response.json()['choices'][0]['message']['content'].strip()
+
 
 def analyze_conversation(conversation, scenario):
     scenario_desc = SCENARIOS.get(scenario, 'General conversation')
@@ -43,49 +113,21 @@ Respond ONLY with valid JSON, no extra text:
         {{
             "response": "<text message response>",
             "confidence": <0.0-1.0>,
-            "vibe": "<one word vibe: Smooth/Bold/Playful/Safe/Risky>",
+            "vibe": "<one word: Smooth/Bold/Playful/Safe/Risky>",
             "reasoning": "<why this works in gen z slang>"
         }}
     ]
 }}"""
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://chatai-rizz.vercel.app",
-        "X-Title": "Rizz Coach"
-    }
+    messages = [
+        {
+            "role": "system",
+            "content": "You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz, situationship, understood the assignment, main character energy. Be real, not nice."
+        },
+        {"role": "user", "content": prompt}
+    ]
 
-    def call_api(model):
-        payload = {
-            "model": model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz, situationship, understood the assignment, main character energy. Be real, not nice."
-                },
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.7,
-            "max_tokens": 600
-        }
-        return requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-
-    # Try primary model
-    response = call_api("stepfun/step-3.5-flash:free")
-
-    # 429 fallback to nemotron
-    if response.status_code == 429:
-        time.sleep(2)
-        response = call_api("nvidia/nemotron-3-super-120b-a12b:free")
-
-    # Final fallback
-    if response.status_code == 429:
-        time.sleep(2)
-        response = call_api("meta-llama/llama-3.3-70b-instruct:free")
-
-    response.raise_for_status()
-
+    response = call_with_fallback(messages)
     content = response.json()['choices'][0]['message']['content'].strip()
 
     # Strip markdown fences if present
@@ -106,18 +148,24 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             data = json.loads(body)
-            conversation = data.get('conversation', '').strip()
             scenario = data.get('scenario', 'first_text')
-
-            if not conversation:
-                self._respond(400, {"error": "No conversation provided"})
-                return
+            conversation = data.get('conversation', '').strip()
+            image_b64 = data.get('image_b64', '').strip()
+            mime_type = data.get('mime_type', 'image/png')
 
             if not OPENROUTER_API_KEY:
                 self._respond(500, {"error": "Server not configured"})
                 return
 
+            if image_b64:
+                conversation = extract_text_from_image(image_b64, mime_type)
+
+            if not conversation:
+                self._respond(400, {"error": "No conversation provided"})
+                return
+
             result = analyze_conversation(conversation, scenario)
+            result['extracted_text'] = conversation
             self._respond(200, result)
 
         except json.JSONDecodeError as e:
@@ -145,4 +193,4 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data).encode())
 
     def log_message(self, format, *args):
-        pass  # Suppress logs
+        pass
