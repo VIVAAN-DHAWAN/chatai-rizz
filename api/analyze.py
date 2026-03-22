@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
+import time
 import requests
 
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
@@ -51,24 +52,38 @@ Respond ONLY with valid JSON, no extra text:
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://rizzcoach.vercel.app",
+        "HTTP-Referer": "https://chatai-rizz.vercel.app",
         "X-Title": "Rizz Coach"
     }
 
-    payload = {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz, situationship, understood the assignment, main character energy. Be real, not nice."
-            },
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 600
-    }
+    def call_api(model):
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz, situationship, understood the assignment, main character energy. Be real, not nice."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 600
+        }
+        return requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
 
-    response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+    # Try primary model
+    response = call_api("stepfun/step-3.5-flash:free")
+
+    # 429 fallback to nemotron
+    if response.status_code == 429:
+        time.sleep(2)
+        response = call_api("nvidia/nemotron-3-super-120b-a12b:free")
+
+    # Final fallback
+    if response.status_code == 429:
+        time.sleep(2)
+        response = call_api("meta-llama/llama-3.3-70b-instruct:free")
+
     response.raise_for_status()
 
     content = response.json()['choices'][0]['message']['content'].strip()
