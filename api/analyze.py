@@ -175,10 +175,18 @@ Respond ONLY with valid JSON, no extra text:
     messages = [{"role": "user", "content": full_prompt}]
     content = call_with_fallback(messages, TEXT_MODELS)
 
+    # Strip markdown fences
     if '```json' in content:
         content = content.split('```json')[1].split('```')[0].strip()
     elif '```' in content:
         content = content.split('```')[1].split('```')[0].strip()
+
+    # Find JSON object in response even if there's extra text around it
+    start = content.find('{')
+    end = content.rfind('}')
+    if start == -1 or end == -1:
+        raise ValueError(f"No JSON found in response: {content[:200]}")
+    content = content[start:end+1]
 
     data = json.loads(content)
     data['alternatives'] = sorted(data['alternatives'], key=lambda x: x.get('confidence', 0), reverse=True)
@@ -212,7 +220,7 @@ class handler(BaseHTTPRequestHandler):
             result['extracted_text'] = conversation
             self._respond(200, result)
 
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, ValueError) as e:
             self._respond(500, {"error": f"Failed to parse AI response: {str(e)}"})
         except requests.exceptions.RequestException as e:
             self._respond(500, {"error": f"AI request failed: {str(e)}"})
