@@ -7,17 +7,24 @@ import requests
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Confirmed working free text models (March 2026)
+# openrouter/free = confirmed valid router, picks best free model automatically
+# Specific :free fallbacks used only if free router keeps 429ing
 TEXT_MODELS = [
+    "openrouter/free",
     "stepfun/step-3.5-flash:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "arcee-ai/arcee-blitz:free",
+    "google/gemma-3-27b-it:free",
     "mistralai/mistral-7b-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-8b:free",
+    "huggingfaceh4/zephyr-7b-beta:free",
+    "openchat/openchat-7b:free",
 ]
 
-# Confirmed working free vision models (March 2026)
+# openrouter/free handles vision too — fallback to specific vision models
 VISION_MODELS = [
+    "openrouter/free",
     "qwen/qwen2.5-vl-32b-instruct:free",
     "qwen/qwen2.5-vl-72b-instruct:free",
     "meta-llama/llama-3.2-11b-vision-instruct:free",
@@ -32,45 +39,82 @@ SCENARIOS = {
     'ghosted': 'Coming back after being ghosted',
 }
 
+# Retry delays in seconds between attempts
+RETRY_DELAYS = [2, 4, 8]
 
-def call_with_fallback(messages, model_list, max_tokens=600):
+
+def call_api(messages, model, max_tokens=600):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://chatai-rizz.vercel.app",
         "X-Title": "Rizz Coach"
     }
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+    }
+    response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+    return response
+
+
+def extract_content(response_json):
+    """Extract text, handling reasoning models that use reasoning_content instead of content."""
+    msg = response_json['choices'][0]['message']
+    content = msg.get('content')
+    if not content:
+        # Reasoning models sometimes return empty content
+        reasoning = msg.get('reasoning') or msg.get('reasoning_content', '')
+        if reasoning:
+            content = reasoning
+    return content.strip() if content else None
+
+
+def call_with_fallback(messages, model_list, max_tokens=600):
     last_error = None
+
     for i, model in enumerate(model_list):
-        if i > 0:
-            time.sleep(1)
-        try:
-            payload = {
-                "model": model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-            }
-            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-            if response.status_code in (429, 503):
-                last_error = f"{response.status_code} from {model}"
-                continue
-            if response.status_code == 400:
-                last_error = f"400 bad request from {model}"
-                continue
-            response.raise_for_status()
+        # For each model, retry up to 3 times with backoff on 429
+        for attempt, delay in enumerate([0] + RETRY_DELAYS):
+            if delay > 0:
+                time.sleep(delay)
+            try:
+                response = call_api(messages, model, max_tokens)
 
-            msg = response.json()['choices'][0]['message']
-            content = msg.get('content') or msg.get('reasoning') or msg.get('reasoning_content', '')
-            if not content or not content.strip():
+                if response.status_code == 429:
+                    last_error = f"429 rate limit on {model}"
+                    # If more retries left for this model, retry after delay
+                    if attempt < len(RETRY_DELAYS):
+                        continue
+                    # Else move to next model
+                    break
+
+                if response.status_code in (400, 503, 502):
+                    last_error = f"{response.status_code} from {model}"
+                    break  # Move to next model immediately
+
+                response.raise_for_status()
+
+                content = extract_content(response.json())
+                if content:
+                    return content
+
                 last_error = f"Empty response from {model}"
-                continue
-            return content.strip()
+                break  # Move to next model
 
-        except requests.exceptions.RequestException as e:
-            last_error = str(e)
-            continue
+            except requests.exceptions.Timeout:
+                last_error = f"Timeout on {model}"
+                break
+            except requests.exceptions.RequestException as e:
+                last_error = str(e)
+                break
 
-    raise Exception(f"All models failed. Last: {last_error}")
+        # Small gap between models
+        if i < len(model_list) - 1:
+            time.sleep(0.5)
+
+    raise Exception(f"All models failed. Try again in a minute. (Last error: {last_error})")
 
 
 def extract_text_from_image(image_b64, mime_type="image/jpeg"):
@@ -95,7 +139,6 @@ def extract_text_from_image(image_b64, mime_type="image/jpeg"):
 def analyze_conversation(conversation, scenario):
     scenario_desc = SCENARIOS.get(scenario, 'General conversation')
 
-    # Merge system prompt into user message to avoid system role issues
     full_prompt = f"""You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz. Be real, not nice.
 
 Analyze this text message convo and give 3 alternative responses ranked by confidence, plus a rizz score out of 10.
