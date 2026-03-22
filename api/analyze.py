@@ -7,20 +7,21 @@ import requests
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# openrouter/free = always $0, smart router that filters by features needed
-# Specific :free fallbacks if free router 429s
+# Confirmed working free text models (March 2026)
 TEXT_MODELS = [
-    "openrouter/free",
     "stepfun/step-3.5-flash:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
     "mistralai/mistral-7b-instruct:free",
 ]
 
+# Confirmed working free vision models (March 2026)
 VISION_MODELS = [
-    "openrouter/free",
+    "qwen/qwen2.5-vl-32b-instruct:free",
+    "qwen/qwen2.5-vl-72b-instruct:free",
     "meta-llama/llama-3.2-11b-vision-instruct:free",
-    "qwen/qwen2.5-vl-7b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
 ]
 
 SCENARIOS = {
@@ -30,22 +31,6 @@ SCENARIOS = {
     'situationship': 'Navigating a situationship',
     'ghosted': 'Coming back after being ghosted',
 }
-
-
-def extract_content(response_json):
-    """Extract text content, handling reasoning models that return empty content."""
-    try:
-        msg = response_json['choices'][0]['message']
-        content = msg.get('content')
-        # Some reasoning models put answer in reasoning field and leave content empty
-        if not content:
-            content = msg.get('reasoning') or msg.get('reasoning_content')
-        if not content:
-            # Try tool_calls or other fields
-            raise ValueError("Empty response from model")
-        return content.strip()
-    except (KeyError, IndexError) as e:
-        raise ValueError(f"Unexpected response format: {e}")
 
 
 def call_with_fallback(messages, model_list, max_tokens=600):
@@ -63,30 +48,29 @@ def call_with_fallback(messages, model_list, max_tokens=600):
             payload = {
                 "model": model,
                 "messages": messages,
-                "temperature": 0.7,
                 "max_tokens": max_tokens,
             }
             response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
-            if response.status_code == 429:
-                last_error = "429 rate limited"
+            if response.status_code in (429, 503):
+                last_error = f"{response.status_code} from {model}"
+                continue
+            if response.status_code == 400:
+                last_error = f"400 bad request from {model}"
                 continue
             response.raise_for_status()
-            # Try to extract content — skip to next model if empty
-            try:
-                content = extract_content(response.json())
-                if content:
-                    return content
-                last_error = "Empty response"
+
+            msg = response.json()['choices'][0]['message']
+            content = msg.get('content') or msg.get('reasoning') or msg.get('reasoning_content', '')
+            if not content or not content.strip():
+                last_error = f"Empty response from {model}"
                 continue
-            except ValueError as e:
-                last_error = str(e)
-                continue
+            return content.strip()
+
         except requests.exceptions.RequestException as e:
             last_error = str(e)
-            if i == len(model_list) - 1:
-                raise
             continue
-    raise Exception(f"All models failed. Last error: {last_error}. Try again in a minute.")
+
+    raise Exception(f"All models failed. Last: {last_error}")
 
 
 def extract_text_from_image(image_b64, mime_type="image/jpeg"):
@@ -111,7 +95,10 @@ def extract_text_from_image(image_b64, mime_type="image/jpeg"):
 def analyze_conversation(conversation, scenario):
     scenario_desc = SCENARIOS.get(scenario, 'General conversation')
 
-    prompt = f"""Analyze this text message convo and give 3 alternative responses ranked by confidence, plus a rizz score out of 10.
+    # Merge system prompt into user message to avoid system role issues
+    full_prompt = f"""You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz. Be real, not nice.
+
+Analyze this text message convo and give 3 alternative responses ranked by confidence, plus a rizz score out of 10.
 
 Scenario: {scenario_desc}
 
@@ -142,14 +129,7 @@ Respond ONLY with valid JSON, no extra text:
     ]
 }}"""
 
-    messages = [
-        {
-            "role": "system",
-            "content": "You are The Rizz Coach - a brutally honest Gen Z texting expert. Use modern slang: mid, fire, W, L, sus, based, slay, no cap, lowkey, highkey, rizz, situationship, understood the assignment, main character energy. Be real, not nice."
-        },
-        {"role": "user", "content": prompt}
-    ]
-
+    messages = [{"role": "user", "content": full_prompt}]
     content = call_with_fallback(messages, TEXT_MODELS)
 
     if '```json' in content:
