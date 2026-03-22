@@ -7,20 +7,20 @@ import requests
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# ONLY :free models — these are always $0.00
+# openrouter/free = always $0, smart router that filters by features needed
+# Specific :free fallbacks if free router 429s
 TEXT_MODELS = [
+    "openrouter/free",
     "stepfun/step-3.5-flash:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "mistralai/mistral-7b-instruct:free",
-    "google/gemma-3-27b-it:free",
 ]
 
-# Vision-capable free models for OCR
 VISION_MODELS = [
+    "openrouter/free",
     "meta-llama/llama-3.2-11b-vision-instruct:free",
     "qwen/qwen2.5-vl-7b-instruct:free",
-    "google/gemma-3-27b-it:free",
 ]
 
 SCENARIOS = {
@@ -30,6 +30,22 @@ SCENARIOS = {
     'situationship': 'Navigating a situationship',
     'ghosted': 'Coming back after being ghosted',
 }
+
+
+def extract_content(response_json):
+    """Extract text content, handling reasoning models that return empty content."""
+    try:
+        msg = response_json['choices'][0]['message']
+        content = msg.get('content')
+        # Some reasoning models put answer in reasoning field and leave content empty
+        if not content:
+            content = msg.get('reasoning') or msg.get('reasoning_content')
+        if not content:
+            # Try tool_calls or other fields
+            raise ValueError("Empty response from model")
+        return content.strip()
+    except (KeyError, IndexError) as e:
+        raise ValueError(f"Unexpected response format: {e}")
 
 
 def call_with_fallback(messages, model_list, max_tokens=600):
@@ -52,16 +68,25 @@ def call_with_fallback(messages, model_list, max_tokens=600):
             }
             response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
             if response.status_code == 429:
-                last_error = "429"
+                last_error = "429 rate limited"
                 continue
             response.raise_for_status()
-            return response
+            # Try to extract content — skip to next model if empty
+            try:
+                content = extract_content(response.json())
+                if content:
+                    return content
+                last_error = "Empty response"
+                continue
+            except ValueError as e:
+                last_error = str(e)
+                continue
         except requests.exceptions.RequestException as e:
             last_error = str(e)
             if i == len(model_list) - 1:
                 raise
             continue
-    raise Exception(f"All free models rate limited. Try again in a minute. Last error: {last_error}")
+    raise Exception(f"All models failed. Last error: {last_error}. Try again in a minute.")
 
 
 def extract_text_from_image(image_b64, mime_type="image/jpeg"):
@@ -80,11 +105,7 @@ def extract_text_from_image(image_b64, mime_type="image/jpeg"):
             ]
         }
     ]
-    response = call_with_fallback(messages, VISION_MODELS, max_tokens=500)
-    content = response.json()['choices'][0]['message'].get('content')
-    if not content:
-        raise Exception("Vision model couldn't read the screenshot. Try a clearer image.")
-    return content.strip()
+    return call_with_fallback(messages, VISION_MODELS, max_tokens=500)
 
 
 def analyze_conversation(conversation, scenario):
@@ -129,11 +150,7 @@ Respond ONLY with valid JSON, no extra text:
         {"role": "user", "content": prompt}
     ]
 
-    response = call_with_fallback(messages, TEXT_MODELS)
-    content = response.json()['choices'][0]['message'].get('content')
-    if not content:
-        raise Exception("AI returned empty response. Try again.")
-    content = content.strip()
+    content = call_with_fallback(messages, TEXT_MODELS)
 
     if '```json' in content:
         content = content.split('```json')[1].split('```')[0].strip()
